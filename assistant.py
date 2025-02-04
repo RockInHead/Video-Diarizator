@@ -132,8 +132,3 @@ def start_assistant(text_file_path, save_folder=None):
         save_to_file(save_folder, summary_filename, analysis_summary)
     else:
         print("Не удалось получить анализ")
-
-# if __name__ == '__main__':
-#     # Пример вызова, если нужно запустить скрипт отдельно
-#     text_file_path = r'D:\AI Strategy\Ассистент гпт\Собеседование 3min.txt'
-#     main(text_file_path)

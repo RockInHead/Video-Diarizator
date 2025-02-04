@@ -22,9 +22,10 @@ def main(video_path, audio_dir_path, text_dir_path, ai_text_dir_path):
     # Извлекаем аудио из видео
     audio_path = extract_audio(video_path, audio_dir_path)
     
-    # Затем выполняем диаризацию
+    # Выполняем диаризацию. Сохраняем путь до файл с диаризацией диалога.
     diarized_text_path = start_diarize(audio = audio_path, model_name = "large", language= "ru", text_dir_path = text_dir_path)
     
+    #Отправляем файл с диаризацией в ChatGPT.
     start_assistant(diarized_text_path, ai_text_dir_path)
     
 
