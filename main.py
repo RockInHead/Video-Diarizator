@@ -1,5 +1,6 @@
 import ffmpeg
 from diarizator.diarize import start_diarize
+from assistant import start_assistant
 import os
 
 def extract_audio(video_path, audio_dir_path):
@@ -16,22 +17,21 @@ def extract_audio(video_path, audio_dir_path):
         return None
     return audio_path
 
-def main(video_path, audio_dir_path, text_dir_path):
+def main(video_path, audio_dir_path, text_dir_path, ai_text_dir_path):
     
     # Извлекаем аудио из видео
     audio_path = extract_audio(video_path, audio_dir_path)
     
     # Затем выполняем диаризацию
-    start_diarize(
-        audio = audio_path,
-        model_name = "large",
-        language= "ru",
-        text_dir_path = text_dir_path
-    )
+    diarized_text_path = start_diarize(audio = audio_path, model_name = "large", language= "ru", text_dir_path = text_dir_path)
+    
+    start_assistant(diarized_text_path, ai_text_dir_path)
+    
 
 if __name__ == "__main__":
-    video_path = r"D:\AI Strategy\Транскрибатор\assets\Собеседование 3min.mp4"
+    video_path = r"D:\AI Strategy\Транскрибатор\assets\Собеседование 7min.mp4"
     audio_dir_path = r"D:\AI Strategy\Транскрибатор\result"
-    text_dir_path = r"D:\AI Strategy\Транскрибатор\result"
+    diarized_text_dir_path = r"D:\AI Strategy\Транскрибатор\result"
+    ai_text_dir_path = r"D:\AI Strategy\Транскрибатор\result"
 
-    main(video_path, audio_dir_path, text_dir_path)
+    main(video_path, audio_dir_path, diarized_text_dir_path, ai_text_dir_path)

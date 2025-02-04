@@ -44,6 +44,7 @@ def write_transcript_to_file(ssm, text_file_name, text_dir_path):
     
     with open(output_path, "w", encoding="utf-8-sig") as f:
         get_speaker_aware_transcript(ssm, f)  # Запись транскрипции в файл
+    return output_path
         
 
 def start_diarize(audio, no_stem=True, suppress_numerals=False, model_name="medium.en", batch_size=8, language=None, device=None, text_dir_path = os.path.dirname(os.path.abspath(__file__))):
@@ -213,6 +214,7 @@ def start_diarize(audio, no_stem=True, suppress_numerals=False, model_name="medi
         
     # Записываем транскрипцию в файл
     text_file_name = os.path.splitext(os.path.basename(audio))[0]
-    write_transcript_to_file(ssm, text_file_name, text_dir_path)
+    diarized_text_path = write_transcript_to_file(ssm, text_file_name, text_dir_path)
 
     cleanup(temp_path)
+    return diarized_text_path
