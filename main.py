@@ -24,7 +24,7 @@ def main(video_path, audio_dir_path, text_dir_path):
     # Затем выполняем диаризацию
     start_diarize(
         audio = audio_path,
-        whisper_model="large",
+        model_name = "large",
         language= "ru",
         text_dir_path = text_dir_path
     )

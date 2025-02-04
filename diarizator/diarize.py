@@ -33,37 +33,6 @@ from diarizator.helpers import (
 
 mtypes = {"cpu": "int8", "cuda": "float16"}
 
-def parse_arguments(audio, no_stem=True, suppress_numerals=False, whisper_model="medium.en", batch_size=8, language=None, device=None):
-    """
-    Функция для передачи аргументов вместо использования командной строки.
-
-    :param audio: Путь к аудиофайлу (обязательный параметр).
-    :param no_stem: Если True, выполняется изоляция вокала (по умолчанию True).
-    :param suppress_numerals: Если True, числительные преобразуются в текст (по умолчанию False).
-    :param whisper_model: Модель Whisper для использования (по умолчанию "medium.en").
-    :param batch_size: Размер батча для транскрибации (по умолчанию 8).
-    :param language: Язык аудио (по умолчанию None, выполняется автоопределение).
-    :param device: Устройство для выполнения вычислений ("cuda" или "cpu", по умолчанию определяется автоматически).
-    :return: Объект с аргументами, аналогичный args.
-    """
-    # Создаем объект Namespace, аналогичный тому, что возвращает argparse
-    class Args:
-        pass
-
-    args = Args()
-
-    # Заполняем аргументы
-    args.audio = audio
-    args.stemming = no_stem
-    args.suppress_numerals = suppress_numerals
-    args.model_name = whisper_model
-    args.batch_size = batch_size
-    args.language = language
-    args.device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
-
-    return args
-
-
 def write_transcript_to_file(ssm, text_file_name, text_dir_path):
     """
     Записывает транскрипцию в файл.
@@ -77,17 +46,17 @@ def write_transcript_to_file(ssm, text_file_name, text_dir_path):
         get_speaker_aware_transcript(ssm, f)  # Запись транскрипции в файл
         
 
-def start_diarize(audio, no_stem=True, suppress_numerals=False, whisper_model="medium.en", batch_size=8, language=None, device=None, text_dir_path = os.path.dirname(os.path.abspath(__file__))):
+def start_diarize(audio, no_stem=True, suppress_numerals=False, model_name="medium.en", batch_size=8, language=None, device=None, text_dir_path = os.path.dirname(os.path.abspath(__file__))):
     
-    args = parse_arguments(audio,no_stem,suppress_numerals,whisper_model,batch_size,language, device)
+    device = device if device else ("cuda" if torch.cuda.is_available() else "cpu")
+    
+    language = process_language_arg(language, model_name)
 
-    language = process_language_arg(args.language, args.model_name)
-
-    if args.stemming:
+    if no_stem:
         # Isolate vocals from the rest of the audio
 
         return_code = os.system(
-            f'python -m demucs.separate -n htdemucs --two-stems=vocals "{args.audio}" -o temp_outputs --device "{args.device}"'
+            f'python -m demucs.separate -n htdemucs --two-stems=vocals "{audio}" -o temp_outputs --device "{device}"'
         )
 
         if return_code != 0:
@@ -95,36 +64,36 @@ def start_diarize(audio, no_stem=True, suppress_numerals=False, whisper_model="m
                 "Source splitting failed, using original audio file. "
                 "Use --no-stem argument to disable it."
             )
-            vocal_target = args.audio
+            vocal_target = audio
         else:
             vocal_target = os.path.join(
                 "temp_outputs",
                 "htdemucs",
-                os.path.splitext(os.path.basename(args.audio))[0],
+                os.path.splitext(os.path.basename(audio))[0],
                 "vocals.wav",
             )
     else:
-        vocal_target = args.audio
+        vocal_target = audio
 
 
     # Transcribe the audio file
     whisper_model = faster_whisper.WhisperModel(
-        args.model_name, device=args.device, compute_type=mtypes[args.device]
+       model_name, device=device, compute_type=mtypes[device]
     )
     whisper_pipeline = faster_whisper.BatchedInferencePipeline(whisper_model)
     audio_waveform = faster_whisper.decode_audio(vocal_target)
     suppress_tokens = (
         find_numeral_symbol_tokens(whisper_model.hf_tokenizer)
-        if args.suppress_numerals
+        if suppress_numerals
         else [-1]
     )
 
-    if args.batch_size > 0:
+    if batch_size > 0:
         transcript_segments, info = whisper_pipeline.transcribe(
             audio_waveform,
             language,
             suppress_tokens=suppress_tokens,
-            batch_size=args.batch_size,
+            batch_size = batch_size,
         )
     else:
         transcript_segments, info = whisper_model.transcribe(
@@ -142,8 +111,8 @@ def start_diarize(audio, no_stem=True, suppress_numerals=False, whisper_model="m
 
     # Forced Alignment
     alignment_model, alignment_tokenizer = load_alignment_model(
-        args.device,
-        dtype=torch.float16 if args.device == "cuda" else torch.float32,
+        device,
+        dtype=torch.float16 if device == "cuda" else torch.float32,
     )
 
     emissions, stride = generate_emissions(
@@ -151,7 +120,7 @@ def start_diarize(audio, no_stem=True, suppress_numerals=False, whisper_model="m
         torch.from_numpy(audio_waveform)
         .to(alignment_model.dtype)
         .to(alignment_model.device),
-        batch_size=args.batch_size,
+        batch_size=batch_size,
     )
 
     del alignment_model
@@ -186,15 +155,13 @@ def start_diarize(audio, no_stem=True, suppress_numerals=False, whisper_model="m
 
 
     # Initialize NeMo MSDD diarization model
-    msdd_model = NeuralDiarizer(cfg=create_config(temp_path)).to(args.device)
+    msdd_model = NeuralDiarizer(cfg=create_config(temp_path)).to(device)
     msdd_model.diarize()
 
     del msdd_model
     torch.cuda.empty_cache()
 
     # Reading timestamps <> Speaker Labels mapping
-
-
     speaker_ts = []
     with open(os.path.join(temp_path, "pred_rttms", "mono_file.rttm"), "r") as f:
         lines = f.readlines()
