@@ -1,4 +1,11 @@
-ctc_forced_aligner==0.3.0
+numpy==1.26.4
+langchain>=0.0.142
+langchain-community
+langchain-huggingface   
+transformers
+numpy>=1.26.1
+faiss-cpu==1.10.0
+python-dotenv>=0.21
 deepmultilingualpunctuation==1.0.1
 faster_whisper==1.1.1
 ffmpeg_python==0.2.0
@@ -11,5 +18,5 @@ wget==3.2
 openai==1.61.0
 git+https://github.com/MahmoudAshraf97/demucs.git
 git+https://github.com/oliverguhr/deepmultilingualpunctuation.git
-git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git
 git+https://github.com/openai/whisper.git@517a43ecd132a2089d85f4ebc044728a71d49f6e
+huggingface_hub==0.23.5
