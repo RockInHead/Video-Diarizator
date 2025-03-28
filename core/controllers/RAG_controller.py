@@ -7,6 +7,7 @@ from core.storage.faiss_db import FaissDB
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
 class RAG:
     """
     Класс RAG – единый интерфейс для работы с RAG-системой.
@@ -41,7 +42,6 @@ class RAG:
         except Exception as e:
             logger.error("Ошибка при добавлении объекта: %s", e)
             return (False, str(e))
-
 
     @staticmethod
     def add_object_from_files(assistant: Any, video_path: str, txt_path: str) -> str:
@@ -117,6 +117,7 @@ class RAG:
         source_type = source_obj.get("type", "").lower().strip()
         source_name = source_obj.get("name", "Неизвестно")
         source_stack = source_obj.get("stack", "отсутствует")
+        source_skils = source_obj.get("skils", "отсутствует")
 
         if source_type == "kandidate":
             source_label = "кандидата"
@@ -145,14 +146,21 @@ class RAG:
         cards_text = "\n".join(cards)
 
         prompt = (
-            f"Ты — эксперт по подбору {result_label}. У тебя есть данные {source_label} \"{source_name}\" со стеком {source_stack}.\n\n"
-            f"Ниже список подходящих {result_label}. Для каждого из них строго указывай все поля: "
-            "`name`, `stack`, `skils`, `description`, `telephone`, `email`, `telegram`. Никакие поля не пропускать, даже если они отсутствуют (вставляй 'отсутствует').\n\n"
-            f"Вот список объектов:\n{cards_text}\n\n"
-            "Сформируй краткий подбор в виде маркированного списка или абзацев, строго соблюдая формат и наличие всех полей. Без лишних комментариев."
+            f"Ты — эксперт по подбору {result_label}. У тебя есть данные {source_label} \"{source_name}\" "
+            f"со стеком: {source_stack};\n "
+            f"и скилами {source_skils}.\n\n"
+            f"Вот список подходящих {result_label}:\n{cards_text}\n\n"
+            f"Сформируй краткий и человечный ответ, который будет выглядеть так: "
+            f"\"Для {source_label} {source_name} подходят следующие {result_label}:\n"
+            f"1. [Имя из объекта списка {cards_text}] со стеком [Стек из объекта списка {cards_text}]. "
+            f"[Краткое объяснение, почему один из {result_label} подходит {source_label}].  \n"
+            f"Контакты: [Контакты из объекта списка {cards_text}].\n\""
+            f"Далее в таком же формате перечисляй все остальные {result_label} из списка, если они есть. \n"
+            f"Используй более разговорный стиль, указывая название/имя, стек, скилы, "
+            f"и краткое объяснение, без лишних комментариев. "
+            f"Учти, что ответ пишешь беспристрастному лицу, осуществляющему подбор"
         )
         return prompt
-
 
     @staticmethod
     def match_object(assistant: Any, object_id: Any, doc_type: str) -> str:
@@ -196,7 +204,6 @@ class RAG:
             logger.error(f"Error in match_object: {e}")
             return f"Error in match_object: {e}"
 
-
     @staticmethod
     def get_all_objects(doc_type: str) -> str:
         """
@@ -222,7 +229,6 @@ class RAG:
             logger.error(f"Error in get_all_objects: {e}")
             return f"Error in get_all_objects: {e}"
 
-
     @staticmethod
     def delete_object(object_id: Any, doc_type: str) -> str:
         """
@@ -245,7 +251,6 @@ class RAG:
         except Exception as e:
             logger.error(f"Error in delete_object: {e}")
             return f"Error in delete_object: {e}"
-
 
     @staticmethod
     def get_object_by_id(object_id: Any, doc_type: str) -> dict:
