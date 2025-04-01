@@ -17,7 +17,6 @@ class GPTAssistant:
     load_dotenv() 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     
-    
     def __init__(self):
         """
         Инициализирует объект GPTAssistant.
@@ -28,7 +27,6 @@ class GPTAssistant:
         self.api_key = os.getenv("OPENAI_API_KEY")
         if not self.api_key: raise ValueError("OPENAI_API_KEY не найден в переменных окружения")
         logging.info("GPTAssistant инициализирован с использованием API-ключа.")
-
 
     def send_message(self, message: str) -> str:
         """
@@ -42,11 +40,12 @@ class GPTAssistant:
         :raises Exception: При ошибке запроса выбрасывается исключение.
         """
         try:
-            response = GPTAssistant.client.chat.completions.create(model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Ты ассистент, помогающий анализировать и структурировать текст."},
-                {"role": "user", "content": message}
-            ])
+            response = GPTAssistant.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Ты ассистент, помогающий анализировать и структурировать текст."},
+                    {"role": "user", "content": message}
+                ])
             # Извлекаем текст ответа из полученного объекта
             answer = response.choices[0].message.content
             return answer
